@@ -1,0 +1,139 @@
+name: build
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+  release:
+    types:
+      - created
+    
+env:
+  DOTNET_VERSION: '6.0.x'
+  
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [linux-x64, linux-arm64]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install dependencies
+      run: dotnet restore
+      
+    - name: build Fastgithub
+      run: |
+        dotnet publish -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true --self-contained -r ${{ matrix.arch }} -o "./publish/fastgithub_${{ matrix.arch }}" ./FastGithub/FastGithub.csproj
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: fastgithub_${{ matrix.arch }}
+        path: ./publish/fastgithub_${{ matrix.arch }}
+      
+    - name: Archive 
+      run: |
+        cd publish
+        zip ../fastgithub_${{ matrix.arch }}.zip ./fastgithub_${{ matrix.arch }} -r
+          
+    - name: Release Linux
+      uses: actions/upload-release-asset@v1
+      if: ${{ github.event_name == 'release' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: fastgithub_${{ matrix.arch }}.zip
+        asset_name: fastgithub_${{ matrix.arch }}.zip
+        asset_content_type: application/octet-stream
+
+
+  build-macos:
+    runs-on: macOS-latest
+    strategy:
+      matrix:
+        arch: [osx-x64, osx-arm64]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install dependencies
+      run: dotnet restore
+      
+    - name: build Fastgithub
+      run: |
+        dotnet publish -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true --self-contained -r ${{ matrix.arch }} -o "./publish/fastgithub_${{ matrix.arch }}" ./FastGithub/FastGithub.csproj
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: fastgithub_${{ matrix.arch }}
+        path: ./publish/fastgithub_${{ matrix.arch }}
+        
+    - name: Archive 
+      run: |
+        cd publish
+        zip ../fastgithub_${{ matrix.arch }}.zip ./fastgithub_${{ matrix.arch }} -r
+             
+    - name: Release macOS
+      uses: actions/upload-release-asset@v1
+      if: ${{ github.event_name == 'release' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: fastgithub_${{ matrix.arch }}.zip
+        asset_name: fastgithub_${{ matrix.arch }}.zip
+        asset_content_type: application/octet-stream
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [win-x64]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install dependencies
+      run: dotnet restore
+      
+    - name: build Fastgithub UI
+      run: |
+        dotnet publish -c Release -o "./publish/fastgithub_win-x64" ./FastGithub.UI/FastGithub.UI.csproj
+        
+    - name: build Fastgithub
+      run: |
+        dotnet publish -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true --self-contained -r ${{ matrix.arch }} -o "./publish/fastgithub_${{ matrix.arch }}" ./FastGithub/FastGithub.csproj
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: fastgithub_${{ matrix.arch }}
+        path: ./publish/fastgithub_${{ matrix.arch }}
+    
+    - name: Archive 
+      run: |
+       Compress-Archive  ./publish/fastgithub_${{ matrix.arch }} fastgithub_${{ matrix.arch }}.zip   
+    
+    - name: Release Windows
+      uses: actions/upload-release-asset@v1
+      if: ${{ github.event_name == 'release' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: fastgithub_${{ matrix.arch }}.zip
+        asset_name: fastgithub_${{ matrix.arch }}.zip
+        asset_content_type: application/octet-stream
