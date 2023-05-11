@@ -99,7 +99,7 @@ namespace FastGithub.PacketIntercept.Dns
             using var addr = new WinDivertAddress();
 
             DnsFlushResolverCache();
-            cancellationToken.Register(DnsFlushResolverCache);
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
 
             while (cancellationToken.IsCancellationRequested == false)
             {
@@ -186,6 +186,11 @@ namespace FastGithub.PacketIntercept.Dns
                 request = null;
                 return false;
             }
+        }
+
+        private void CurrentDomain_ProcessExit(object? sender, EventArgs e)
+        {
+            DnsFlushResolverCache();
         }
     }
 }
