@@ -58,11 +58,17 @@ namespace FastGithub.DomainResolve
             try
             {
                 await this.StartCoreAsync(cancellationToken);
+                AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
             }
             catch (Exception ex)
             {
                 this.logger.LogWarning($"{this.processName}启动失败：{ex.Message}");
             }
+        }
+
+        private void CurrentDomain_ProcessExit(object? sender, EventArgs e)
+        {
+            this.Stop();
         }
 
         /// <summary>
