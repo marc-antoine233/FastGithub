@@ -11,42 +11,42 @@ namespace FastGithub.Configuration
     public static class GlobalListener
     {
         private static readonly IPGlobalProperties global = IPGlobalProperties.GetIPGlobalProperties();
-        private static readonly HashSet<int> tcpListenPorts = GetListenPorts(global.GetActiveTcpListeners);
-        private static readonly HashSet<int> udpListenPorts = GetListenPorts(global.GetActiveUdpListeners);
+        private static readonly HashSet<string> tcpListenPorts = GetListenPorts(global.GetActiveTcpListeners);
+        private static readonly HashSet<string> udpListenPorts = GetListenPorts(global.GetActiveUdpListeners);
 
         /// <summary>
         /// ssh端口
         /// </summary>
-        public static int SshPort { get; } = GetAvailableTcpPort(22);
+        public static int GetSshPort(IPAddress ip) => GetAvailableTcpPort(ip, 22);
 
         /// <summary>
         /// git端口
         /// </summary>
-        public static int GitPort { get; } = GetAvailableTcpPort(9418);
+        public static int GetGitPort(IPAddress ip) => GetAvailableTcpPort(ip, 9418);
 
         /// <summary>
         /// http端口
         /// </summary>
-        public static int HttpPort { get; } = OperatingSystem.IsWindows() ? GetAvailableTcpPort(80) : GetAvailableTcpPort(3880);
+        public static int GetHttpPort(IPAddress ip) => OperatingSystem.IsWindows() ? GetAvailableTcpPort(ip, 80) : GetAvailableTcpPort(ip, 3880);
 
         /// <summary>
         /// https端口
         /// </summary>
-        public static int HttpsPort { get; } = OperatingSystem.IsWindows() ? GetAvailableTcpPort(443) : GetAvailableTcpPort(38443);
+        public static int GetHttpsPort(IPAddress ip) => OperatingSystem.IsWindows() ? GetAvailableTcpPort(ip, 443) : GetAvailableTcpPort(ip, 38443);
 
         /// <summary>
         /// 获取已监听的端口
         /// </summary>
         /// <param name="func"></param>
         /// <returns></returns>
-        private static HashSet<int> GetListenPorts(Func<IPEndPoint[]> func)
+        private static HashSet<string> GetListenPorts(Func<IPEndPoint[]> func)
         {
-            var hashSet = new HashSet<int>();
+            var hashSet = new HashSet<string>();
             try
             {
                 foreach (var endpoint in func())
                 {
-                    hashSet.Add(endpoint.Port);
+                    hashSet.Add($"{endpoint.Address}:{endpoint.Port}");
                 }
             }
             catch (Exception)
@@ -60,9 +60,9 @@ namespace FastGithub.Configuration
         /// </summary>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static bool CanListenTcp(int port)
+        public static bool CanListenTcp(IPAddress ip, int port)
         {
-            return tcpListenPorts.Contains(port) == false;
+            return tcpListenPorts.Contains($"{ip}:{port}") == false;
         }
 
         /// <summary>
@@ -70,9 +70,9 @@ namespace FastGithub.Configuration
         /// </summary>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static bool CanListenUdp(int port)
+        public static bool CanListenUdp(IPAddress ip, int port)
         {
-            return udpListenPorts.Contains(port) == false;
+            return udpListenPorts.Contains($"{ip}:{port}") == false;
         }
 
         /// <summary>
@@ -80,9 +80,9 @@ namespace FastGithub.Configuration
         /// </summary>
         /// <param name="port"></param>
         /// <returns></returns>
-        public static bool CanListen(int port)
+        public static bool CanListen(IPAddress ip, int port)
         {
-            return CanListenTcp(port) && CanListenUdp(port);
+            return CanListenTcp(ip, port) && CanListenUdp(ip, port);
         }
 
         /// <summary>
@@ -90,9 +90,9 @@ namespace FastGithub.Configuration
         /// </summary>
         /// <param name="minPort"></param> 
         /// <returns></returns>
-        public static int GetAvailableTcpPort(int minPort)
+        public static int GetAvailableTcpPort(IPAddress ip, int minPort)
         {
-            return GetAvailablePort(CanListenTcp, minPort);
+            return GetAvailablePort(CanListenTcp, ip, minPort);
         }
 
         /// <summary>
@@ -100,9 +100,9 @@ namespace FastGithub.Configuration
         /// </summary>
         /// <param name="minPort"></param> 
         /// <returns></returns>
-        public static int GetAvailableUdpPort(int minPort)
+        public static int GetAvailableUdpPort(IPAddress ip, int minPort)
         {
-            return GetAvailablePort(CanListenUdp, minPort);
+            return GetAvailablePort(CanListenUdp, ip, minPort);
         }
 
         /// <summary>
@@ -110,9 +110,9 @@ namespace FastGithub.Configuration
         /// </summary>
         /// <param name="minPort"></param> 
         /// <returns></returns>
-        public static int GetAvailablePort(int minPort)
+        public static int GetAvailablePort(IPAddress ip, int minPort)
         {
-            return GetAvailablePort(CanListen, minPort);
+            return GetAvailablePort(CanListen, ip, minPort);
         }
 
         /// <summary>
@@ -122,11 +122,11 @@ namespace FastGithub.Configuration
         /// <param name="minPort"></param>
         /// <returns></returns>
         /// <exception cref="FastGithubException"></exception>
-        private static int GetAvailablePort(Func<int, bool> canFunc, int minPort)
+        private static int GetAvailablePort(Func<IPAddress, int, bool> canFunc, IPAddress ip, int minPort)
         {
             for (var port = minPort; port < IPEndPoint.MaxPort; port++)
             {
-                if (canFunc(port) == true)
+                if (canFunc(ip, port) == true)
                 {
                     return port;
                 }

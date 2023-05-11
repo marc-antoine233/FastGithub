@@ -72,7 +72,7 @@ namespace FastGithub.DomainResolve
         /// <returns></returns>
         private async Task StartCoreAsync(CancellationToken cancellationToken)
         {
-            var port = GlobalListener.GetAvailablePort(5533);
+            var port = GlobalListener.GetAvailablePort(IPAddress.Loopback, 5533);
             var localEndPoint = new IPEndPoint(IPAddress.Loopback, port);
 
             await TomlUtil.SetListensAsync(this.tomlFilePath, localEndPoint, cancellationToken);
@@ -118,7 +118,7 @@ namespace FastGithub.DomainResolve
             }
             catch (Exception ex)
             {
-                this.logger.LogWarning($"{this.processName}停止失败：{ex.Message }");
+                this.logger.LogWarning($"{this.processName}停止失败：{ex.Message}");
             }
             finally
             {

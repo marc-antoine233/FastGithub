@@ -21,6 +21,11 @@ namespace FastGithub.Configuration
         public int HttpProxyPort { get; set; }
 
         /// <summary>
+        /// 监听ip
+        /// </summary>
+        public IPAddress[] IpAddressList { get; set; }
+
+        /// <summary>
         /// 回退的dns
         /// </summary>
         public IPEndPoint[] FallbackDns { get; set; }
@@ -34,6 +39,7 @@ namespace FastGithub.Configuration
         {
             var opt = options.CurrentValue;
 
+            this.IpAddressList = opt.IpAddressList;
             this.HttpProxyPort = opt.HttpProxyPort;
             this.FallbackDns = opt.FallbackDns;
             this.domainConfigs = ConvertDomainConfigs(opt.DomainConfigs);
@@ -48,6 +54,7 @@ namespace FastGithub.Configuration
         /// <param name="options"></param>
         private void Update(FastGithubOptions options)
         {
+            this.IpAddressList = options.IpAddressList;
             this.HttpProxyPort = options.HttpProxyPort;
             this.FallbackDns = options.FallbackDns;
             this.domainConfigs = ConvertDomainConfigs(options.DomainConfigs);

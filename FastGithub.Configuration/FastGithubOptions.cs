@@ -10,6 +10,11 @@ namespace FastGithub.Configuration
     public class FastGithubOptions
     {
         /// <summary>
+        /// 监听ip
+        /// </summary>
+        public IPAddress[] IpAddressList { get; set; } = Array.Empty<IPAddress>();
+
+        /// <summary>
         /// http代理端口
         /// </summary>
         public int HttpProxyPort { get; set; } = 38457;

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Sinks.Network;
 using System;
@@ -53,16 +54,20 @@ namespace FastGithub
             builder.WebHost.UseKestrel(kestrel =>
             {
                 kestrel.NoLimit();
-                if (OperatingSystem.IsWindows())
+                var options = kestrel.ApplicationServices.GetRequiredService<IOptions<FastGithubOptions>>().Value;
+                foreach (var ip in options.IpAddressList)
                 {
-                    kestrel.ListenHttpsReverseProxy();
-                    kestrel.ListenHttpReverseProxy();
-                    kestrel.ListenSshReverseProxy();
-                    kestrel.ListenGitReverseProxy();
-                }
-                else
-                {
-                    kestrel.ListenHttpProxy();
+                    if (OperatingSystem.IsWindows())
+                    {
+                        kestrel.ListenHttpsReverseProxy(ip);
+                        kestrel.ListenHttpReverseProxy(ip);
+                        kestrel.ListenSshReverseProxy(ip);
+                        kestrel.ListenGitReverseProxy(ip);
+                    }
+                    else
+                    {
+                        kestrel.ListenHttpProxy(ip);
+                    }
                 }
             });
         }
