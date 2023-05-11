@@ -15,6 +15,11 @@ namespace FastGithub.Configuration
         public IPAddress[] IpAddressList { get; set; } = Array.Empty<IPAddress>();
 
         /// <summary>
+        /// 环回地址
+        /// </summary>
+        public string RedirectHost { get; set; } = "localhost";
+
+        /// <summary>
         /// http代理端口
         /// </summary>
         public int HttpProxyPort { get; set; } = 38457;

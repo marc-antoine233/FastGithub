@@ -21,6 +21,11 @@ namespace FastGithub.Configuration
         public int HttpProxyPort { get; set; }
 
         /// <summary>
+        /// 环回地址
+        /// </summary>
+        public string RedirectHost { get; set; } = "localhost";
+
+        /// <summary>
         /// 监听ip
         /// </summary>
         public IPAddress[] IpAddressList { get; set; }

@@ -29,11 +29,20 @@ namespace FastGithub.PacketIntercept.Dns
 
         private readonly TimeSpan ttl = TimeSpan.FromMinutes(5d);
 
+        private IPAddress Loopback = IPAddress.Loopback;
+        private IPAddress IPv6Loopback = IPAddress.IPv6Loopback;
+
         /// <summary>
         /// 刷新DNS缓存
         /// </summary>    
         [DllImport("dnsapi.dll", EntryPoint = "DnsFlushResolverCache", SetLastError = true)]
         private static extern void DnsFlushResolverCache();
+
+        /// <summary>
+        /// dns解析
+        /// </summary>    
+        [DllImport("dnsapi.dll", EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint DnsQuery(ref string hostname, ushort iType, uint iOptions, uint aipServers, ref IntPtr ppQueryResults, uint pReserved);
 
         /// <summary>
         /// dns拦截器
@@ -48,8 +57,33 @@ namespace FastGithub.PacketIntercept.Dns
         {
             this.fastGithubConfig = fastGithubConfig;
             this.logger = logger;
+            try
+            {
+                this.Loopback = System.Net.Dns.GetHostAddresses(options.CurrentValue.RedirectHost, System.Net.Sockets.AddressFamily.InterNetwork)[0];
+            }
+            catch { this.Loopback =IPAddress.Loopback; }
 
-            options.OnChange(_ => DnsFlushResolverCache());
+            try
+            {
+                this.IPv6Loopback = System.Net.Dns.GetHostAddresses(options.CurrentValue.RedirectHost, System.Net.Sockets.AddressFamily.InterNetworkV6)[0];
+            }
+            catch { this.IPv6Loopback =IPAddress.IPv6Loopback; }
+
+
+            options.OnChange(_ =>
+            {
+                DnsFlushResolverCache();
+                try
+                {
+                    this.Loopback = System.Net.Dns.GetHostAddresses(options.CurrentValue.RedirectHost, System.Net.Sockets.AddressFamily.InterNetwork)[0];
+                }
+                catch { this.Loopback = IPAddress.Loopback; }
+                try
+                {
+                    this.IPv6Loopback = System.Net.Dns.GetHostAddresses(options.CurrentValue.RedirectHost, System.Net.Sockets.AddressFamily.InterNetworkV6)[0];
+                }
+                catch { this.IPv6Loopback = IPAddress.IPv6Loopback; }
+            });
         }
 
         /// <summary>
@@ -116,7 +150,7 @@ namespace FastGithub.PacketIntercept.Dns
 
             // dns响应数据
             var response = Response.FromRequest(request);
-            var loopback = question.Type == RecordType.A ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            var loopback = question.Type == RecordType.A ? this.Loopback : this.IPv6Loopback;
             var record = new IPAddressResourceRecord(domain, loopback, this.ttl);
             response.AnswerRecords.Add(record);
 
