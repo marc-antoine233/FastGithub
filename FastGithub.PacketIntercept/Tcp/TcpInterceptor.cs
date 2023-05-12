@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
@@ -30,8 +31,10 @@ namespace FastGithub.PacketIntercept.Tcp
         /// <param name="logger"></param>
         public TcpInterceptor(int oldServerPort, Dictionary<string, int> newServer, ILogger logger)
         {
+            this.newServer=newServer.Where(p => p.Value != oldServerPort).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
             this.filter_string=$"(loopback and (tcp.DstPort == {(ushort)oldServerPort}) or (false ";
-            foreach (var kvp in newServer)
+            foreach (var kvp in this.newServer)
             {
                 switch (IPAddress.Parse(kvp.Key).AddressFamily)
                 {
@@ -45,8 +48,6 @@ namespace FastGithub.PacketIntercept.Tcp
             }
             this.filter_string+="))";
 
-            this.oldServerPort = (ushort)oldServerPort;
-            this.newServer = newServer;
             this.logger = logger;
         }
 
@@ -66,7 +67,7 @@ namespace FastGithub.PacketIntercept.Tcp
             using var packet = new WinDivertPacket();
             using var addr = new WinDivertAddress();
 
-            foreach (var kvp in newServer)
+            foreach (var kvp in this.newServer)
             {
                 this.logger.LogInformation($"{kvp.Key}:{this.oldServerPort} <=> {kvp.Key}:{kvp.Value}");
             }
