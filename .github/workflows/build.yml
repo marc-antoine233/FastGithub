@@ -1,10 +1,5 @@
 name: build
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-  workflow_dispatch:
   release:
     types:
       - created
@@ -16,6 +11,8 @@ env:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         arch: [linux-x64, linux-arm64]
