@@ -30,7 +30,7 @@ namespace FastGithub.PacketIntercept.Tcp
             Dictionary<string, int> values = new Dictionary<string, int>();
             foreach (var ip in options.IpAddressList)
             {
-                values.Add(ip.ToString(), GlobalListener.GetGitPort(ip));
+                values.Add(ip.ToString(), GlobalListener.GetHttpPort(ip));
             }
             return values;
         }
