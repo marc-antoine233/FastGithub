@@ -2,12 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using WindivertDotnet;
-using static WindivertDotnet.IFilter;
 
 namespace FastGithub.PacketIntercept.Tcp
 {
@@ -30,10 +30,18 @@ namespace FastGithub.PacketIntercept.Tcp
         /// <param name="logger"></param>
         public TcpInterceptor(int oldServerPort, Dictionary<string, int> newServer, ILogger logger)
         {
-            this.filter_string=$"(loopback and ((tcp.DstPort == {(ushort)oldServerPort})) or (false ";
+            this.filter_string=$"(loopback and (tcp.DstPort == {(ushort)oldServerPort}) or (false ";
             foreach (var kvp in newServer)
             {
-                this.filter_string+=$"or (ip.SrcAddr == {kvp.Key} and tcp.SrcPort == {kvp.Value})";
+                switch (IPAddress.Parse(kvp.Key).AddressFamily)
+                {
+                    case AddressFamily.InterNetwork:
+                        this.filter_string+=$"or (ip.SrcAddr == {kvp.Key} and tcp.SrcPort == {kvp.Value})";
+                        break;
+                    case AddressFamily.InterNetworkV6:
+                        this.filter_string+=$"or (ipv6.SrcAddr == {kvp.Key} and tcp.SrcPort == {kvp.Value})";
+                        break;
+                }
             }
             this.filter_string+="))";
 
@@ -91,14 +99,23 @@ namespace FastGithub.PacketIntercept.Tcp
             var result = packet.GetParseResult();
             if (result.TcpHeader->DstPort == oldServerPort)
             {
-                switch (result.Protocol)
+                if (result.IPV4Header!=null)
                 {
-                    case ProtocolType.IPv4:
-                        result.TcpHeader->DstPort = (ushort)this.newServer.GetValueOrDefault(result.IPV4Header->DstAddr.ToString());
-                        break;
-                    case ProtocolType.IPv6:
-                        result.TcpHeader->DstPort = (ushort)this.newServer.GetValueOrDefault(result.IPV6Header->DstAddr.ToString());
-                        break;
+                    int DstPortNew;
+                    this.newServer.TryGetValue(result.IPV4Header->DstAddr.ToString(), out DstPortNew);
+                    if (DstPortNew>0)
+                    {
+                        result.TcpHeader->DstPort = (ushort)DstPortNew;
+                    }
+                }
+                if (result.IPV6Header!=null)
+                {
+                    int DstPortNew;
+                    this.newServer.TryGetValue(result.IPV6Header->DstAddr.ToString(), out DstPortNew);
+                    if (DstPortNew>0)
+                    {
+                        result.TcpHeader->DstPort = (ushort)DstPortNew;
+                    }
                 }
             }
             else
