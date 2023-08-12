@@ -1,5 +1,5 @@
 FROM ubuntu:18.04
-LABEL MAINTAINER=marc-antoine233
+LABEL MAINTAINER=marc-antoine153
 
 RUN <<EOF
 apt update
@@ -10,6 +10,6 @@ EOF
 
 ENV LANG zh_CN.utf8
 
-ADD ./zip/ /fastgithub/
+ADD ./zip/fastgithub_linux-x64 /fastgithub
 EXPOSE 38457
 CMD /fastgithub/fastgithub
