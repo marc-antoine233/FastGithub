@@ -18,6 +18,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           
+      - name: Download and extract zip file
+        run: |
+          wget https://github.com/dotnetcore/FastGithub/releases/download/2.1.4/fastgithub_linux-x64.zip
+          unzip fastgithub_linux-x64.zip -d ./zip
+            
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
